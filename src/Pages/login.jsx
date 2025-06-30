@@ -1,42 +1,86 @@
-
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { loginUser } from '../api/userApi'; 
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you can handle login logic
-    console.log('Login submitted:', { email, password });
+    setErrorMsg('');
+
+    try {
+      const data =await loginUser({ username: username, password: password });
+
+      if (data.success) {
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+
+        if (data.user.role === 'admin') {
+          navigate('/admin');
+        } else {
+          toast.error('Access denied: You are not an admin');
+          //setErrorMsg('Access denied: You are not an admin');
+          navigate('/login');
+        }
+      } else {
+        setErrorMsg(data.message || 'Login failed');
+        toast.error(data.message || 'Login failed');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setErrorMsg('Invalid username or password');
+      toast.error('Invalid username or password');
+    }
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '2rem auto', padding: '1rem', border: '1px solid #ccc', borderRadius: '8px' }}>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '1rem' }}>
-          <label>Email:</label><br />
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ width: '100%', padding: '0.5rem' }}
-          />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
+      <div className="bg-white p-6 rounded shadow-md w-full max-w-sm">
+        <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
+
+        {errorMsg && (
+          <div className="mb-4 text-red-600 text-center">{errorMsg}</div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block mb-1">Username:</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block mb-1">Password:</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-red-800 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
+          >
+            Login
+          </button>
+        </form>
+
+        <div className="mt-4 text-center">
+          <Link to="/" className="text-blue-600 hover:underline">Home</Link>
         </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label>Password:</label><br />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ width: '100%', padding: '0.5rem' }}
-          />
-        </div>
-        <button type="submit" style={{ padding: '0.5rem 1rem' }}>Login</button>
-      </form>
+      </div>
     </div>
   );
 };
